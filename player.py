@@ -4,7 +4,10 @@ Class for each player
 
 class Player:
     board = None
-    
+    beforeBonus = ["Aces", "Twos", "Threes", "Fours", "Fives", "Sixes"]
+    afterBonus = ["One pair", "Two pair", "Three-of-a-kind", "Four-of-a-kind", \
+                  "Small straight", "Large straight", "House", "Chance", "Yatzy", "Total"]
+
     def __init__(self, name):
         self.board = {
             "Participants": None,
@@ -41,3 +44,29 @@ class Player:
 
     def get(self, key):
         return self.board[key]
+
+    def getName(self):
+        return self.board["Participants"]
+
+    def updateType(self, type):
+        """
+        Calculate and fill in the cells of type: "Sum", "Bonus", "Total" when needed
+        """
+        sum = 0
+        if type == "Sum":
+            sum = self.calculateSumOfList(self.beforeBonus)
+        elif type == "Bonus":
+            if self.board["Sum"] >= 63:
+                sum = 50
+        elif type == "Total":
+            sum = self.calculateSumOfList(self.beforeBonus)
+            sum += self.calculateSumOfList(self.afterBonus)
+        self.board[type] = sum
+
+    def calculateSumOfList(self, list):
+        sum = 0
+        for key in list:
+            value = self.board[key]
+            if value is not None:
+                sum += value
+        return sum
