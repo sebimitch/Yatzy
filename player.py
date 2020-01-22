@@ -10,7 +10,7 @@ class Player:
 
     def __init__(self, name):
         self.board = {
-            "Participants": None,
+            "Participants": name,
             "Aces": None,
             "Twos": None,
             "Threes": None,
@@ -30,7 +30,6 @@ class Player:
             "Yatzy": None,
             "Total": None
         }
-        self.board["Participants"] = name
 
     def __str__(self):
         name = self.get("Participants")
@@ -38,15 +37,35 @@ class Player:
 
     def set(self, key, toWhat):
         """
-        Sets board[key] = toWhat
+        Sets board[key] = toWhat. If key is int, get corresponding key to index.
         """
-        self.board[key] = toWhat
+        if type(key) is str:
+            self.board[key] = toWhat
+        elif type(key) is int:
+            strKey = rowIndexToKey(key)
+            self.board[strKey] = toWhat
+        else:
+            raise SystemExit
 
     def get(self, key):
         return self.board[key]
 
     def getName(self):
         return self.board["Participants"]
+
+    def checkIfUpdate(self):
+        """
+        Check if enough rows have been filled to fill in Sum, Bonus or Total.
+        """
+        for i in range(1, 16):
+            key = self.rowIndexToKey(i)
+            if self.get(key) is None:
+                break
+            elif i == 6:
+                self.updateType("Sum")
+                self.updateType("Bonus")
+            elif i == 15:
+                self.updateType("Total")
 
     def updateType(self, type):
         """
@@ -70,3 +89,22 @@ class Player:
             if value is not None:
                 sum += value
         return sum
+
+    def checkIfRowAvailable(self, index):
+        """
+        Determines if the value corresponding to the index has already been filled.
+        Returns True if row has not been filled.
+        """
+        key = self.rowIndexToKey(index)
+        rowValue = self.board[key]
+        return True if rowValue is None else False
+
+    def rowIndexToKey(self, i):
+        """
+        Given a row index (1-15), return the type of yatzy score in str
+        """
+        # if
+        if i <= 6:
+            return self.beforeBonus[i-1]
+        else:
+            return self.afterBonus[i-7]

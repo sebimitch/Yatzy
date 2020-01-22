@@ -11,6 +11,7 @@ countBotPlayers = -1
 yatzyType = ""  # free/forced
 players = []
 botNames = ["LazyBot", "SmartBot", "DogBot", "CatBot"]
+rowIndexList = ["Index", 1, 2, 3, 4, 5, 6, "", "", 7, 8, 9, 10, 11, 12, 13, 14, 15, ""]
 combinations = {
     "Participants": "The names of participants",
     "Aces": "The sum of dice with number 1",
@@ -43,14 +44,14 @@ def initiate():
     # Find how many human players
     while (countHumanPlayers < 1) or (countHumanPlayers > maxPlayers):
         try:
-            countHumanPlayers = int(input("How many human players? (1-4) "))
+            countHumanPlayers = int(input("\nHow many human players? (1-4) "))
         except ValueError:
             continue
 
     # Ask for a name for each human player, and add a Player()
     for i in range(countHumanPlayers):
         while True:
-            name = input(f"Name of player {i+1}: ")
+            name = input(f"\nName of player {i+1}: ")
             if name != "":
                 players.append(Player(name))
                 break
@@ -60,7 +61,7 @@ def initiate():
         maxMachinePlayers = maxPlayers - countHumanPlayers
         while (countBotPlayers < 0) or (countBotPlayers > maxMachinePlayers):
             try:
-                countBotPlayers = int(input(f"How many machine players? (0-{maxMachinePlayers}) "))
+                countBotPlayers = int(input(f"\nHow many machine players? (0-{maxMachinePlayers}) "))
             except ValueError:
                 continue
 
@@ -69,8 +70,10 @@ def initiate():
         players.append(Player(botNames[i]))
 
     # Find yatzy type to play
+    s = "\nGame type?\n  - Forced Yatzy: Player must follow game board (1's, then 2's,"
+    print(s + " etc.)\n  - Free Yatzy: Player can choose what row to assign score to")
     while yatzyType != "free" and yatzyType != "forced":
-        yatzyType = input("Play 'free' or 'forced' Yatzy? ")
+        yatzyType = input("\nPlay 'free' or 'forced' Yatzy? ")
 
 def printBoard():
     """
@@ -80,12 +83,17 @@ def printBoard():
 
     keyList = list(combinations.keys())
     widthKey = findMinWidth(keyList)
+    widthIndex = findMinWidth(rowIndexList)
 
     for key in combinations:
         board.append(f"| {key:{widthKey}} |")
 
     for i in range(len(board)):
+        # Write the index column
+        rowIndex = rowIndexList[i]
+        board[i] = f"| {rowIndex:<{widthIndex}} " + board[i]
         for player in players:
+            # Write a column for each player
             item = player.get(keyList[i])
             if item == None:
                 item = ""
@@ -105,22 +113,21 @@ def findMinWidth(list):
     Return: (int) length of longest string in list
     """
     longest = ""
-    for str in list:
-        if len(longest) < len(str):
-            longest = str
+    for item in list:
+        item = str(item) # Can't use len() on int
+        if len(longest) < len(item):
+            longest = item
     return len(longest)
 
 def startGame():
-    # Set amount of rows to complete in Yatzy
-    if yatzyType == "forced":
-        forcedYatzy()
-    else:
-        freeYatzy()
-
-def forcedYatzy():
-    # global combinations
-    print("\n\n\n*** Starting game of forced Yatzy ***")
+    print("\n\n\n*** Starting game of Yatzy ***")
     dice = Dice()
+    if yatzyType == "forced":
+        forcedYatzy(dice)
+    else:
+        freeYatzy(dice)
+
+def forcedYatzy(dice):
     for key in combinations:
         if key == "Participants":
             continue
@@ -142,12 +149,11 @@ def forcedYatzy():
                     print(dice)
                 else:
                     toKeep = input("What dice would you like to keep (ex: 1 3 5)(0 to keep all): ").split()
-                    if toKeep.strip() == "0":
+                    if toKeep == ["0"]:
                         # Keep current dice setup
                         break
                     dice.roll(toKeep)
                     print(dice)
-
 
                 input("\nPress ENTER to continue: ")
 
@@ -156,9 +162,45 @@ def forcedYatzy():
     # Final score
     printBoard()
 
-def freeYatzy():
-    pass
-    # use time.sleep(0.5) # 0.5 seconds
+def freeYatzy(dice):
+    # There are always 15 rows to fill in
+    for i in range(15):
+        # Each player plays once per row
+        for player in players:
+            printBoard()
+
+            # Each player has up to 3 throws
+            for turn in range(1, 4):
+                print(f"\nIt's player {player.getName()}'s turn: Throw {turn} (of 3)")
+                if turn == 1:
+                    input("Press ENTER to roll: ")
+                    dice.roll()
+                    print(dice)
+                else:
+                    toKeep = input("What dice would you like to keep (ex: 1 3 5)(0 to finish turn): ").split()
+                    if toKeep == ["0"]:
+                        # Keep current dice setup
+                        break
+                    dice.roll(toKeep)
+                    print(dice)
+                input("\nPress ENTER to continue: ")
+            # Turn finished, must now choose which row to score in
+            rowIndex = -1
+            while (rowIndex < 1 or rowIndex > 15):
+                try:
+                    rowIndex = int(input("\nChoose row index to set score: "))
+                    if rowIndex < 1 or rowIndex > 15:
+                        continue
+                    rowIndex = rowIndex if player.checkIfRowAvailable(rowIndex) else -1
+                except ValueError:
+                    pass
+
+            strKey = player.rowIndexToKey(rowIndex)
+            player.set(strKey, dice.calculateSum(strKey))
+            player.checkIfUpdate()
+    # Final score
+    printBoard()
+
 
 if __name__ == "__main__":
     initiate()
