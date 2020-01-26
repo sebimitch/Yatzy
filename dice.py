@@ -178,3 +178,183 @@ class Dice:
         if sumPair == 0 or sumThreeOfAKind == 0:
             return 0
         return sumThreeOfAKind + sumPair
+
+    def whatToKeep(self, whatType, moves):
+        """
+        Determines what dice should be kept before next throw, when one already knows
+        which category one intends to put points in.
+        Paramters:
+            - whatType (str): Category for score, for ex. "Aces", "One pair", etc.
+            - moves (int): How many remaining throws
+        Return:
+            - list of dices to keep before next throw (ex: ["1", "2", "5"], or ["0"] to end turn)
+        """
+        toKeep = [] # Keep list of dice numbers, not dice values
+        dice = self.dice
+
+        types = {"Aces": 1, "Twos": 2, "Threes": 3, "Fours": 4, "Fives": 5, "Sixes": 6}
+        if whatType in types.keys():
+            # Handles all categories in types.keys()
+            for key, value in types.items():
+                if whatType == key:
+                    toKeep.extend(self.diceNumbersEqualTo(value))
+
+        elif whatType == "One pair":
+            # Test for any pair, and only keep pair of 4 or higher
+            if self.sumPair(1) >= 8:
+                toKeep.append("0") # Keep pair and end turn
+            else:
+                for i in range(len(dice)):
+                    if dice[i] >= 4:
+                        toKeep.append(i + 1)
+                if [3, 4, 5] == toKeep:
+                    # If all three dice numbers are in toKeep, remove dice 3 (number 4)
+                    toKeep.pop(0)
+        elif whatType == "Two pair":
+            sumTwoPair = self.sumPair(2)
+            if sumTwoPair > 0:
+                # There is two pairs, keep current dice setup
+                toKeep.append(0)
+            else:
+                sumPair = self.sumPair(1)
+                if sumPair > 0:
+                    value = sumPair / 2
+                    # Keep dice with value of pair, plus the highest value dice not in a pair
+                    addedOne = False
+                    for i in range(4, -1, -1):
+                        if dice[i] == value:
+                            toKeep.append(i+1)
+                        elif addedOne == False:
+                            toKeep.append(i+1)
+                            addedOne = True
+                else:
+                    # No pairs, keep the 2 highest value dice
+                    toKeep.append(4); toKeep.append(5)
+        elif whatType == "Three-of-a-kind":
+            sum = self.sumNumOfAKind(3)
+            if sum > 0:
+                # Three-of-a-kind, keep
+                toKeep.append(0)
+            else:
+                sum = self.sumPair(1)
+                if sum > 0:
+                    toKeep.extend(self.diceNumbersEqualTo(sum / 2))
+                else:
+                    toKeep.append(5)
+        elif whatType == "Four-of-a-kind":
+            sum = self.sumNumOfAKind(4)
+            if sum > 0:
+                # Four-of-a-kind, keep
+                toKeep.append(0)
+            else:
+                sum = self.sumNumOfAKind(3)
+                if sum > 0:
+                    toKeep.extend(self.diceNumbersEqualTo(sum / 3))
+                else:
+                    sum = self.sumPair(1)
+                    if sum > 0:
+                        toKeep.extend(self.diceNumbersEqualTo(sum / 2))
+                    else:
+                        toKeep.append(5)
+        elif whatType == "Small straight":
+            smallStraight = [1, 2, 3, 4, 5]
+            for i in range(len(dice)):
+                if dice[i] in smallStraight:
+                    toKeep.append(i+1)
+                    # Only want 1 of each value, so remove it from list
+                    smallStraight.remove(dice[i])
+            if toKeep == [1, 2, 3, 4, 5]:
+                toKeep.clear()
+                toKeep.append(0)
+        elif whatType == "Large straight":
+            largeStraight = [2, 3, 4, 5, 6]
+            for i in range(len(dice)):
+                if dice[i] in largeStraight:
+                    toKeep.append(i+1)
+                    # Only want 1 of each value, so remove it from list
+                    largeStraight.remove(dice[i])
+            if toKeep == [1, 2, 3, 4, 5]:
+                toKeep.clear()
+                toKeep.append(0)
+        elif whatType == "House":
+            sumHouse = self.sumHouse()
+            if sumHouse > 0:
+                toKeep.append(0)
+            else:
+                sum = self.sumNumOfAKind(4)
+                if sum > 0:
+                    toKeep.extend(self.diceNumbersEqualTo(sum / 4))
+                else:
+                    sum = self.sumPair(2)
+                    if sum > 0:
+                        valueLargePair = self.sumPair(1) / 2
+                        valueSmallPair = (sum - valueLargePair*2) / 2
+                        for i in range(len(dice)):
+                            if dice[i] == valueLargePair or dice[i] == valueSmallPair:
+                                toKeep.append(i+1)
+                    else:
+                        sum = self.sumNumOfAKind(3)
+                        if sum > 0:
+                            toKeep.extend(self.diceNumbersEqualTo(sum / 3))
+                        else:
+                            sum = self.sumPair(1)
+                            if sum > 0:
+                                toKeep.extend(self.diceNumbersEqualTo(sum / 2))
+                            else:
+                                for i in range(3, 5):
+                                    if dice[i] > 3:
+                                        toKeep.append(i+1)
+        elif whatType == "Chance":
+            for i in range(len(dice)):
+                if dice[i] >= (5 if moves == 2 else 4):
+                    toKeep.append(i+1)
+        elif whatType == "Yatzy":
+            sum = self.sumNumOfAKind(5)
+            if sum > 0:
+                toKeep.append(0)    # Yatzy!
+            else:
+                sum = self.sumNumOfAKind(4)
+                if sum > 0:
+                    toKeep.extend(self.diceNumbersEqualTo(sum / 4))
+                else:
+                    sum = self.sumNumOfAKind(3)
+                    if sum > 0:
+                        toKeep.extend(self.diceNumbersEqualTo(sum / 3))
+                    else:
+                        sum = self.sumPair(1)
+                        if sum > 0:
+                            toKeep.extend(self.diceNumbersEqualTo(sum / 2))
+                        else:
+                            toKeep.append(5)
+
+        toKeep.sort()
+        print("Keep dice number:", toKeep, "\n")
+        # Convert int elements to str
+        toKeep = [str(elem) for elem in toKeep]
+        return toKeep
+
+    def diceNumbersEqualTo(self, value):
+        """
+        Add all values in dice list that are equal to value, to a new list, and return it.
+        Is a function because this exact format was used a lot in self.whatToKeep()
+        Parameter:
+            - value (int): Compare values in dice to this value
+        Return:
+            - list containing all dice numbers where the dice == value
+        """
+        list = []
+        for i in range(len(self.dice)):
+            if self.dice[i] == value:
+                list.append(i+1)
+        return list
+
+    def determineNextMove(self, moves, chooseFrom):
+        """
+        Determines next move with the available information
+        Paramters:
+            - moves (int): how many remaining throws
+            - chooseFrom (list): all unused row categories ("Aces", "Twos", etc.)
+        Return:
+            - list of dices to keep before next throw (ex: ["1", "2", "5"], or ["0"] to end turn)
+        """
+        return self.whatToKeep(chooseFrom[0], moves)

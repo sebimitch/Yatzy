@@ -1,14 +1,18 @@
 """
 Class for each player
 """
+import time
 
 class Player:
+    playerType = ""   # Human/bot
     board = None
     beforeBonus = ["Aces", "Twos", "Threes", "Fours", "Fives", "Sixes"]
     afterBonus = ["One pair", "Two pair", "Three-of-a-kind", "Four-of-a-kind", \
                   "Small straight", "Large straight", "House", "Chance", "Yatzy", "Total"]
+    unusedRows = [] # For free Yatzy
+    yatzyType = ""  # Forced/Free
 
-    def __init__(self, name):
+    def __init__(self, name, playerType, yatzyType):
         self.board = {
             "Participants": name,
             "Aces": None,
@@ -30,6 +34,10 @@ class Player:
             "Yatzy": None,
             "Total": None
         }
+        self.playerType = playerType
+        self.unusedRows = self.beforeBonus + self.afterBonus
+        self.unusedRows.pop()   # Remove "Total"
+        self.yatzyType = yatzyType
 
     def __str__(self):
         name = self.get("Participants")
@@ -41,9 +49,11 @@ class Player:
         """
         if type(key) is str:
             self.board[key] = toWhat
+            self.unusedRows.remove(key)
         elif type(key) is int:
             strKey = rowIndexToKey(key)
             self.board[strKey] = toWhat
+            self.unusedRows.remove(key)
         else:
             raise SystemExit
 
@@ -52,6 +62,29 @@ class Player:
 
     def getName(self):
         return self.board["Participants"]
+
+    def getPlayerType(self):
+        return self.playerType
+
+    def getInput(self, inputText, dice, moves=0, category=""):
+        """
+        Depending on if current player is Human/Bot, ask for input() or time.sleep()
+        Paramters:
+            - inputText (str): Text to display in input(inputText)
+            - dice (list): instance of Dice, contains current dice setup
+            - moves (int): How many remaining throws
+            - category (str): What category to play in, ex: "Aces", "One pair", etc.
+        """
+        if self.playerType == "Human":
+            return input(inputText)
+        elif self.playerType == "Bot":
+            time.sleep(0.5)
+            if inputText == "What dice would you like to keep (ex: 1 3 5)(0 to keep all): ":
+                print("\nBot calulcating...")
+                if self.yatzyType == "Forced":
+                    return dice.whatToKeep(category, moves)
+                else:
+                    return dice.determineNextMove(moves, self.unusedRows)
 
     def checkIfUpdate(self):
         """
