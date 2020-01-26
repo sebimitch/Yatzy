@@ -13,4 +13,4 @@ python yatzy.py
 - While the game mode "Free Yatzy" works with bots, the current implementation is just
 following the board, similar to "Forced Yatzy". Ideally the program would determine what
 category ("Aces", "One pair", etc.) the current dice setup would be best to aim towards
-for the next throw(s), and once there are no more throws.
+for the next throw(s), and once there are no more throws, the best category to put points in.
